@@ -50,19 +50,63 @@ var i = 0;
 
 function predictWebcam() {
   // Now let's start classifying a frame in the stream.
-  if (i == 10) { return }
-  console.log(model);
-  console.log(video);
-  console.log(video.srcObject);
-  img = tf.browser.fromPixels(video);
-  img = tf.expandDims(img);
-  img.array().then(arr => {
-   var arr_gray = transform_to_gray(arr)
+  // console.log(model);
+  // console.log(video);
+  // console.log(video.srcObject);
 
- });
-  // console.log(img);
-  // console.log(img[0]);
+
   i = i + 1;
+
+  detector.estimateHands(video).then(function (hands) {
+    for (let i = 0; i < children.length; i++) {
+      liveView.removeChild(children[i]);
+    }
+    children.splice(0);
+
+    if (hands.length !== 0) {
+
+      const min_x = hands[0].keypoints.reduce((min, current) => {
+        return current.x < min.x ? current : min
+      }, hands[0].keypoints[0]).x;
+
+      const max_x = hands[0].keypoints.reduce((min, current) => {
+        return current.x > min.x ? current : min
+      }, hands[0].keypoints[0]).x;
+
+      const min_y = hands[0].keypoints.reduce((min, current) => {
+        return current.y < min.y ? current : min
+      }, hands[0].keypoints[0]).y;
+
+      const max_y = hands[0].keypoints.reduce((min, current) => {
+        return current.y > min.y ? current : min
+      }, hands[0].keypoints[0]).y;
+
+      const centre_x = (min_x + max_x) / 2;
+      const centre_y = (min_y + max_y) / 2;
+
+      const p = document.createElement('p');
+
+      p.style = 'margin-left: ' + min_x + 'px; margin-top: '
+        + (max_y - 10) + 'px; width: '
+        + ((max_x - min_x) - 10) + 'px; top: 0; left: 0;';
+
+      const highlighter = document.createElement('div');
+      highlighter.setAttribute('class', 'highlighter');
+
+      highlighter.style = 'left: ' + min_x + 'px; top: '
+          + min_y + 'px; width: '
+          + (max_x - min_x) + 'px; height: '
+        + (max_y - min_y) + 'px;';
+
+      liveView.appendChild(highlighter);
+      liveView.appendChild(p);
+      children.push(highlighter);
+      children.push(p);
+
+
+
+    }
+  });
 
   // for
 
@@ -109,6 +153,17 @@ function predictWebcam() {
 
 // Store the resulting model in the global scope of our app.
 var model = undefined;
+const handDetectModel = handPoseDetection.SupportedModels.MediaPipeHands;
+const detectConfig = {
+  runtime: 'tfjs',
+  modelType: 'lite'
+}
+var detector = undefined;
+
+
+handPoseDetection.createDetector(handDetectModel, detectConfig).then(function (det) {
+  detector = det;
+})
 
 // Before we can use COCO-SSD class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment
