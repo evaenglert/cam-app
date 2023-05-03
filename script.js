@@ -8,6 +8,9 @@ const liveView = document.getElementById('liveView');
 const demosSection = document.getElementById('demos');
 const enableWebcamButton = document.getElementById('webcamButton');
 
+const img = document.createElement('img');
+document.body.appendChild(img);
+
 // Check if webcam access is supported.
 function getUserMediaSupported() {
   return !!(navigator.mediaDevices &&
@@ -46,7 +49,8 @@ function enableCam(event) {
 }
 
 var children = [];
-var i = 0;
+
+var bodyChildren = [];
 
 function predictWebcam() {
   // Now let's start classifying a frame in the stream.
@@ -54,14 +58,17 @@ function predictWebcam() {
   // console.log(video);
   // console.log(video.srcObject);
 
-
-  i = i + 1;
-
   detector.estimateHands(video).then(function (hands) {
     for (let i = 0; i < children.length; i++) {
       liveView.removeChild(children[i]);
     }
     children.splice(0);
+
+    for (let i = 0; i < bodyChildren.length; i++) {
+      document.body.removeChild(bodyChildren[i]);
+    }
+    children.splice(0);
+    bodyChildren.splice(0);
 
     if (hands.length !== 0) {
 
@@ -103,7 +110,41 @@ function predictWebcam() {
       children.push(highlighter);
       children.push(p);
 
+      const canvas = document.createElement('canvas');
+      var max_dist = Math.max(max_x - min_x, max_y - min_y) * 1.1;
+      canvas.width = 28;
+      canvas.height = 28;
 
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
+      const croppedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // const croppedImageData = canvas.toDataURL('image/jpeg');
+
+
+      const img = document.createElement('img');
+      img.src = croppedImageData;
+      document.body.appendChild(img);
+      bodyChildren.push(img);
+
+      // Create a new two-dimensional array to store the RGB values
+      const pixels = new Array(1);
+      pixels[0] = new Array(canvas.height);
+      for (let i = 0; i < canvas.height; i++) {
+        pixels[0][i] = new Array(canvas.width);
+      }
+
+      // Iterate over the pixel data and extract the RGB values
+      const data = croppedImageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const x = (i / 4) % canvas.width;
+        const y = Math.floor((i / 4) / canvas.width);
+        pixels[0][y][x] = [(data[i] +  data[i + 1] + data[i + 2]) / 3];
+      }
+
+      var input  = tf.tensor4d(pixels, [1, 28, 28, 1]);
+
+      prediction = model.predict(input);
+      console.log(prediction.dataSync());
 
     }
   });
@@ -176,9 +217,15 @@ handPoseDetection.createDetector(handDetectModel, detectConfig).then(function (d
 //   // Show demo section now model is ready to use.
 //   demosSection.classList.remove('invisible');
 // });
-async function runModel() {
-  model = await tf.loadLayersModel('saved_model/model.json');
-  demosSection.classList.remove('invisible');
-}
 
-runModel()
+tf.loadLayersModel('saved_model/model.json').then(function (loadedModel) {
+  model = loadedModel;
+  demosSection.classList.remove('invisible');
+})
+
+// async function runModel() {
+//   model = await tf.loadLayersModel('saved_model/model.json');
+//   demosSection.classList.remove('invisible');
+// }
+
+// runModel()
