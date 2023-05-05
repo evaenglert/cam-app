@@ -26,7 +26,7 @@ if (getUserMediaSupported()) {
 // Enable the live webcam view and start classification.
 function enableCam(event) {
   // Only continue if the COCO-SSD has finished loading.
-  if (!model) {
+  if (!model | !labels) {
     return;
   }
 
@@ -105,9 +105,6 @@ function predictWebcam() {
       ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
       const croppedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-      const img = document.createElement('img');
-      img.src = croppedImageData;
-
       // Create a new two-dimensional array to store the RGB values
       const pixels = new Array(1);
       pixels[0] = new Array(canvas.height);
@@ -125,51 +122,19 @@ function predictWebcam() {
 
       var input  = tf.tensor4d(pixels, [1, 28, 28, 1]);
 
+      var predictions = model.predict(input).dataSync();
 
-      prediction = model.predict(input);
-      console.log(prediction.dataSync());
+      var pred_idx = predictions.indexOf(Math.max(...predictions));
+
+      p.innerText = labels[pred_idx] + ' - with '
+        + Math.round(parseFloat(predictions[pred_idx]) * 100)
+          + '% confidence.';
+      p.style = 'margin-left: ' + min_x + 'px; margin-top: '
+        + (max_y - 10) + 'px; width: '
+        + ((max_x - min_x) - 10) + 'px; top: 0; left: 0;';
 
     }
   });
-
-  // for
-
-  // shape [480, 640, 3]
-
-  // model.detect(video).then(function (predictions) {
-  //   // Remove any highlighting we did previous frame.
-  //   for (let i = 0; i < children.length; i++) {
-  //     liveView.removeChild(children[i]);
-  //   }
-  //   children.splice(0);
-
-  //   // Now lets loop through predictions and draw them to the live view if
-  //   // they have a high confidence score.
-  //   for (let n = 0; n < predictions.length; n++) {
-  //     // If we are over 66% sure we are sure we classified it right, draw it!
-  //     if (predictions[n].score > 0.66) {
-  //       const p = document.createElement('p');
-  //       p.innerText = predictions[n].class + ' - with '
-  //         + Math.round(parseFloat(predictions[n].score) * 100)
-  //         + '% confidence.';
-  //       p.style = 'margin-left: ' + predictions[n].bbox[0] + 'px; margin-top: '
-  //         + (predictions[n].bbox[1] - 10) + 'px; width: '
-  //         + (predictions[n].bbox[2] - 10) + 'px; top: 0; left: 0;';
-
-  //       const highlighter = document.createElement('div');
-  //       highlighter.setAttribute('class', 'highlighter');
-  //       highlighter.style = 'left: ' + predictions[n].bbox[0] + 'px; top: '
-  //         + predictions[n].bbox[1] + 'px; width: '
-  //         + predictions[n].bbox[2] + 'px; height: '
-  //         + predictions[n].bbox[3] + 'px;';
-
-  //       liveView.appendChild(highlighter);
-  //       liveView.appendChild(p);
-  //       children.push(highlighter);
-  //       children.push(p);
-  //     }
-    // }
-
   //   // Call this function again to keep predicting when the browser is ready.
     window.requestAnimationFrame(predictWebcam);
   // });
@@ -177,6 +142,8 @@ function predictWebcam() {
 
 // Store the resulting model in the global scope of our app.
 var model = undefined;
+var labels = undefined;
+
 const handDetectModel = handPoseDetection.SupportedModels.MediaPipeHands;
 const detectConfig = {
   runtime: 'tfjs',
@@ -189,26 +156,13 @@ handPoseDetection.createDetector(handDetectModel, detectConfig).then(function (d
   detector = det;
 })
 
-// Before we can use COCO-SSD class we must wait for it to finish
-// loading. Machine Learning models can be large and take a moment
-// to get everything needed to run.
-// Note: cocoSsd is an external object loaded from our index.html
-// script tag import so ignore any warning in Glitch.
-
-// cocoSsd.load().then(function (loadedModel) {
-//   model = loadedModel;
-//   // Show demo section now model is ready to use.
-//   demosSection.classList.remove('invisible');
-// });
-
 tf.loadLayersModel('saved_model/model.json').then(function (loadedModel) {
   model = loadedModel;
+
+  fetch('saved_model/labels.json')
+    .then(function (response) {return response.json()})
+    .then(function (response) { labels = response});
+
+
   demosSection.classList.remove('invisible');
 })
-
-// async function runModel() {
-//   model = await tf.loadLayersModel('saved_model/model.json');
-//   demosSection.classList.remove('invisible');
-// }
-
-// runModel()
