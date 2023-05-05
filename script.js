@@ -8,9 +8,6 @@ const liveView = document.getElementById('liveView');
 const demosSection = document.getElementById('demos');
 const enableWebcamButton = document.getElementById('webcamButton');
 
-const img = document.createElement('img');
-document.body.appendChild(img);
-
 // Check if webcam access is supported.
 function getUserMediaSupported() {
   return !!(navigator.mediaDevices &&
@@ -50,25 +47,14 @@ function enableCam(event) {
 
 var children = [];
 
-var bodyChildren = [];
-
 function predictWebcam() {
   // Now let's start classifying a frame in the stream.
-  // console.log(model);
-  // console.log(video);
-  // console.log(video.srcObject);
 
   detector.estimateHands(video).then(function (hands) {
     for (let i = 0; i < children.length; i++) {
       liveView.removeChild(children[i]);
     }
     children.splice(0);
-
-    for (let i = 0; i < bodyChildren.length; i++) {
-      document.body.removeChild(bodyChildren[i]);
-    }
-    children.splice(0);
-    bodyChildren.splice(0);
 
     if (hands.length !== 0) {
 
@@ -118,13 +104,9 @@ function predictWebcam() {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
       const croppedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      // const croppedImageData = canvas.toDataURL('image/jpeg');
-
 
       const img = document.createElement('img');
       img.src = croppedImageData;
-      document.body.appendChild(img);
-      bodyChildren.push(img);
 
       // Create a new two-dimensional array to store the RGB values
       const pixels = new Array(1);
@@ -142,6 +124,7 @@ function predictWebcam() {
       }
 
       var input  = tf.tensor4d(pixels, [1, 28, 28, 1]);
+
 
       prediction = model.predict(input);
       console.log(prediction.dataSync());
