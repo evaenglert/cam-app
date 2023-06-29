@@ -98,8 +98,8 @@ function predictWebcam() {
 
       const canvas = document.createElement('canvas');
       var max_dist = Math.max(max_x - min_x, max_y - min_y) * 1.1;
-      canvas.width = 28;
-      canvas.height = 28;
+      canvas.width = 400;
+      canvas.height = 400;
 
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
@@ -117,10 +117,10 @@ function predictWebcam() {
       for (let i = 0; i < data.length; i += 4) {
         const x = (i / 4) % canvas.width;
         const y = Math.floor((i / 4) / canvas.width);
-        pixels[0][y][x] = [(data[i] +  data[i + 1] + data[i + 2]) / 3];
+        pixels[0][y][x] = [data[i], data[i + 1], data[i + 2]];
       }
 
-      var input  = tf.tensor4d(pixels, [1, 28, 28, 1]);
+      var input = tf.tensor4d(pixels, [1, 400, 400, 3]);
 
       var predictions = model.predict(input).dataSync();
 
@@ -156,10 +156,10 @@ handPoseDetection.createDetector(handDetectModel, detectConfig).then(function (d
   detector = det;
 })
 
-tf.loadLayersModel('saved_model/model.json').then(function (loadedModel) {
+tf.loadLayersModel('mobile_saved_model/model.json').then(function (loadedModel) {
   model = loadedModel;
 
-  fetch('saved_model/labels.json')
+  fetch('mobile_saved_model/mobile_labels.json')
     .then(function (response) {return response.json()})
     .then(function (response) { labels = response});
 
