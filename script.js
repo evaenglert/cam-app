@@ -97,9 +97,9 @@ function predictWebcam() {
       children.push(p);
 
       const canvas = document.createElement('canvas');
-      var max_dist = Math.max(max_x - min_x, max_y - min_y) * 1.1;
-      canvas.width = 400;
-      canvas.height = 400;
+      var max_dist = Math.max(max_x - min_x, max_y - min_y) * 1.2;
+      canvas.width = 100;
+      canvas.height = 100;
 
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
@@ -120,7 +120,8 @@ function predictWebcam() {
         pixels[0][y][x] = [data[i], data[i + 1], data[i + 2]];
       }
 
-      var input = tf.tensor4d(pixels, [1, 400, 400, 3]);
+
+      var input = tf.tensor4d(pixels, [1, 100, 100, 3]);
 
       var predictions = model.predict(input).dataSync();
 
