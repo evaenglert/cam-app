@@ -7,6 +7,7 @@ const video = document.getElementById('webcam');
 const liveView = document.getElementById('liveView');
 const demosSection = document.getElementById('demos');
 const enableWebcamButton = document.getElementById('webcamButton');
+const testView = document.getElementById('test');
 
 // Check if webcam access is supported.
 function getUserMediaSupported() {
@@ -46,6 +47,7 @@ function enableCam(event) {
 }
 
 var children = [];
+var testViewChildren = [];
 
 function predictWebcam() {
   // Now let's start classifying a frame in the stream.
@@ -55,6 +57,12 @@ function predictWebcam() {
       liveView.removeChild(children[i]);
     }
     children.splice(0);
+
+    for (let i = 0; i < testViewChildren.length; i++) {
+      testView.removeChild(testViewChildren[i]);
+    }
+
+    testViewChildren.splice(0);
 
     if (hands.length !== 0) {
 
@@ -105,6 +113,11 @@ function predictWebcam() {
       ctx.drawImage(video, centre_x - max_dist / 2, centre_y - max_dist / 2, max_dist, max_dist, 0, 0, canvas.width, canvas.height);
       const croppedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
+      // console.log(croppedImageData);
+
+      // testView.appendChild(croppedImageData.data);
+      // testViewChildren.push(croppedImageData.data);
+
       // Create a new two-dimensional array to store the RGB values
       const pixels = new Array(1);
       pixels[0] = new Array(canvas.height);
@@ -117,7 +130,7 @@ function predictWebcam() {
       for (let i = 0; i < data.length; i += 4) {
         const x = (i / 4) % canvas.width;
         const y = Math.floor((i / 4) / canvas.width);
-        pixels[0][y][x] = [data[i], data[i + 1], data[i + 2]];
+        pixels[0][y][x] = [data[i]/255, data[i + 1]/255, data[i + 2]/255];
       }
 
 
